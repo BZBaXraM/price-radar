@@ -1,0 +1,3 @@
+ZAI_API_KEY=32940d795a514f64ae7ac1995d15fea9.OJe3ZMRN9gIUvEgL
+ZAI_MODEL=glm-4.7-flash
+ZAI_BASE_URL=https://api.z.ai/api/paas/v4

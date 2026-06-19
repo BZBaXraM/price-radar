@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+/*
+  PriceRadar design system — editorial, not generic-AI.
+  No purple/violet. Warm off-white paper, ink black, single burnt-orange accent.
+  Display: Fraunces (serif). Body: Inter.
+*/
+@theme {
+  --color-paper: #faf8f5;
+  --color-paper-2: #f3efe8;
+  --color-ink: #0a0a0a;
+  --color-ink-2: #18181b;
+  --color-muted: #6b6660;
+  --color-line: #e0dad0;
+  --color-accent: #c2410c; /* burnt orange — used sparingly */
+  --color-accent-soft: #f0d9c8;
+  --color-deal: #1a3a2e; /* deep forest green for savings */
+
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+}
+
+/*
+  Dark theme — editorial night: warm near-black paper, off-white ink,
+  brighter burnt-orange accent. Tokens are referenced via var() by Tailwind v4
+  utilities, so overriding them under .dark re-themes the whole app.
+*/
+.dark {
+  --color-paper: #100f0d;
+  --color-paper-2: #1b1916;
+  --color-ink: #f2ede4;
+  --color-ink-2: #e7e0d4;
+  --color-muted: #9c948a;
+  --color-line: #2c2823;
+  --color-accent: #e8633a;
+  --color-accent-soft: #3a241a;
+  --color-deal: #74b394;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+/* Editorial display headings */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+}
+
+/* Product image: editorial grayscale → color on hover */
+.img-editorial {
+  filter: grayscale(0.15) contrast(1.02);
+  transition: filter 250ms ease-out, transform 300ms ease-out;
+}
+.group:hover .img-editorial {
+  filter: grayscale(0) contrast(1.05);
+  transform: scale(1.03);
+}
+
+/* Subtle entrance */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out both;
+}
+
+/* Thin scrollbar for chat */
+.thin-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 0; }
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-paper);
+}

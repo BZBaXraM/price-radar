@@ -1,0 +1,32 @@
+[project]
+name = "price-radar"
+version = "0.1.0"
+description = "PriceRadar — price comparison platform for Azerbaijani e-commerce stores"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "httpx",
+    "websockets",
+    "python-dotenv",
+    "sqlalchemy[asyncio]",
+    "aiosqlite",
+    "greenlet",
+    "pydantic-settings",
+    "selectolax",
+    "apscheduler",
+    "rapidfuzz",
+    "tenacity",
+    "openai",
+    "playwright",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
