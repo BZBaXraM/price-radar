@@ -28,13 +28,15 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  // Apply the persisted theme before paint to avoid a flash of the wrong theme.
+  // Apply persisted theme and lang before paint to avoid flashes.
   const noFlashTheme = `(function(){try{var s=JSON.parse(localStorage.getItem('priceradar'));if(s&&s.state&&s.state.theme==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+  const noFlashLang = `(function(){try{var s=JSON.parse(localStorage.getItem('priceradar'));if(s&&s.state&&s.state.lang)document.documentElement.lang=s.state.lang;}catch(e){}})();`;
 
   return (
-    <html lang="az" className={`${fraunces.variable} ${inter.variable} h-full`}>
+    <html lang="az" className={`${fraunces.variable} ${inter.variable} h-full`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashTheme }} />
+        <script dangerouslySetInnerHTML={{ __html: noFlashLang }} />
       </head>
       <body className="min-h-full flex flex-col bg-paper text-ink">
         <Suspense fallback={<div className="h-16 border-b border-line" />}>

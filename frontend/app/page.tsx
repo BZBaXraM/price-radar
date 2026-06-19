@@ -5,7 +5,7 @@ import { GridSkeleton } from "@/components/Skeleton";
 
 export default function Home() {
   return (
-    <>
+    <div className="animate-page-enter">
       <Hero />
       <Suspense
         fallback={
@@ -16,6 +16,6 @@ export default function Home() {
       >
         <Catalog />
       </Suspense>
-    </>
+    </div>
   );
 }

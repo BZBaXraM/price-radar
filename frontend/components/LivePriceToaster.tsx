@@ -15,6 +15,7 @@ interface Toast extends PriceUpdate {
 export function LivePriceToaster() {
   const lang = useAppStore((s) => s.lang);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [exiting, setExiting] = useState<Set<string>>(new Set());
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -48,8 +49,12 @@ export function LivePriceToaster() {
           setToasts((t) => [...fresh, ...t].slice(0, 4));
           fresh.forEach((f) => {
             setTimeout(() => {
-              setToasts((t) => t.filter((x) => x.key !== f.key));
-            }, 8000);
+              setExiting((prev) => { const s = new Set(prev); s.add(f.key); return s; });
+              setTimeout(() => {
+                setToasts((t) => t.filter((x) => x.key !== f.key));
+                setExiting((prev) => { const s = new Set(prev); s.delete(f.key); return s; });
+              }, 300);
+            }, 7700);
           });
         } catch {
           /* ignore malformed */
@@ -80,7 +85,7 @@ export function LivePriceToaster() {
           <Link
             key={t.key}
             href={`/product/${t.product_id}`}
-            className="bg-paper border border-ink p-3 animate-fade-up block hover:bg-paper-2 transition-colors"
+            className={`bg-paper border border-ink p-3 block hover:bg-paper-2 transition-colors ${exiting.has(t.key) ? "animate-fade-out" : "animate-fade-up"}`}
           >
             <div className="flex items-center gap-2 mb-1">
               <span

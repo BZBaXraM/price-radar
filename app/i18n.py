@@ -24,6 +24,20 @@ CATALOG: dict[str, dict[str, str]] = {
         "ru": "По этому запросу товары не найдены.",
         "en": "No products found for this query.",
     },
+    # Category labels — keys match URL slugs stored in Product.category
+    "telefonlar-plansetler": {"az": "Telefon və Planşetlər", "ru": "Телефоны и Планшеты", "en": "Phones & Tablets"},
+    "noutbuklar-komputerler-planshetler": {"az": "Noutbuk və Kompüterlər", "ru": "Ноутбуки и Компьютеры", "en": "Laptops & Computers"},
+    "noutbuklar": {"az": "Noutbuklar", "ru": "Ноутбуки", "en": "Laptops"},
+    "soyuducular": {"az": "Soyuducular", "ru": "Холодильники", "en": "Refrigerators"},
+    "paltaryuyan-masinlar": {"az": "Paltaryuyan Maşınlar", "ru": "Стиральные машины", "en": "Washing Machines"},
+    "telefon-ve-aksesuarlar": {"az": "Telefon və Aksesuarlar", "ru": "Телефоны и аксессуары", "en": "Phones & Accessories"},
+    "notbuk-planset-ve-komputer-texnikasi": {"az": "Noutbuk, Planşet və Kompüter", "ru": "Ноутбуки, Планшеты и ПК", "en": "Laptops, Tablets & PCs"},
+    "foto-texnika": {"az": "Foto Texnika", "ru": "Фототехника", "en": "Photo Equipment"},
+    "fotoaparatlar": {"az": "Fotoaparatlar", "ru": "Фотоаппараты", "en": "Cameras"},
+    "boyuk-meiset-texnikasi": {"az": "Böyük Məişət Texnikası", "ru": "Крупная бытовая техника", "en": "Large Home Appliances"},
+    "k1+telefon-plansetler-saat": {"az": "Telefon, Planşet, Saat", "ru": "Телефоны, Планшеты, Часы", "en": "Phones, Tablets & Watches"},
+    "k4+noutbuk-komputer-ofis": {"az": "Noutbuk, Kompüter, Ofis", "ru": "Ноутбуки, Компьютеры, Офис", "en": "Laptops, Computers & Office"},
+    "k5+tv-audio-foto": {"az": "TV, Audio, Foto", "ru": "ТВ, Аудио, Фото", "en": "TV, Audio & Photo"},
 }
 
 LANG_NAMES = {"az": "Azərbaycan dili", "ru": "Русский", "en": "English"}

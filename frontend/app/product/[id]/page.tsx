@@ -9,5 +9,5 @@ export default function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  return <ProductDetailView id={Number(id)} />;
+  return <div className="animate-page-enter"><ProductDetailView id={Number(id)} /></div>;
 }

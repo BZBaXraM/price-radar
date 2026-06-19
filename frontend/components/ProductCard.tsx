@@ -31,6 +31,9 @@ export function ProductCard({ p }: { p: ProductSummary }) {
       </div>
 
       <div className="flex flex-col gap-2 p-3 flex-1">
+        {p.category_label && (
+          <p className="text-[10px] text-muted uppercase tracking-wider">{p.category_label}</p>
+        )}
         <h3 className="text-sm leading-snug line-clamp-2 min-h-[2.5rem]">{p.title}</h3>
         <div className="mt-auto pt-2 border-t border-line">
           <p className="text-[11px] text-muted uppercase tracking-wide">

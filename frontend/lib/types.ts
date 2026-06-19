@@ -6,6 +6,7 @@ export interface ProductSummary {
   brand: string | null;
   model: string | null;
   category: string | null;
+  category_label: string | null;
   image_url: string | null;
   best_price: number | null;
   best_store: string | null;

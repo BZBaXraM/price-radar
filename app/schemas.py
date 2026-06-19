@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class StoreOut(BaseModel):
@@ -40,6 +40,7 @@ class ProductSummary(BaseModel):
     brand: str | None = None
     model: str | None = None
     category: str | None = None
+    category_label: str | None = None
     image_url: str | None = None
     best_price: float | None = None
     best_store: str | None = None
@@ -58,10 +59,21 @@ class ProductListResponse(BaseModel):
     page_size: int
 
 
+_SUPPORTED_LANGS = {"az", "ru", "en"}
+
+
 class ChatRequest(BaseModel):
     message: str
     lang: str = "az"
     history: list[dict[str, str]] = Field(default_factory=list)
+
+    @field_validator("lang", mode="before")
+    @classmethod
+    def _normalize_lang(cls, v: object) -> str:
+        if not v or not isinstance(v, str):
+            return "az"
+        code = str(v).strip().lower().split("-")[0].split(",")[0]
+        return code if code in _SUPPORTED_LANGS else "az"
 
 
 class ChatResponse(BaseModel):

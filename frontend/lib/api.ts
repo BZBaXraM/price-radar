@@ -30,18 +30,20 @@ function qs(params: Record<string, unknown> | ProductQuery): string {
   return s ? `?${s}` : "";
 }
 
-async function getJSON<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(`${API}${path}`, { signal });
+async function getJSON<T>(path: string, signal?: AbortSignal, lang?: Lang): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (lang) headers["Accept-Language"] = lang;
+  const res = await fetch(`${API}${path}`, { signal, headers });
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;
 }
 
 export const api = {
   products(query: ProductQuery = {}, signal?: AbortSignal) {
-    return getJSON<ProductListResponse>(`/api/products${qs(query)}`, signal);
+    return getJSON<ProductListResponse>(`/api/products${qs(query)}`, signal, query.lang);
   },
   product(id: number, lang: Lang, signal?: AbortSignal) {
-    return getJSON<ProductDetail>(`/api/products/${id}${qs({ lang })}`, signal);
+    return getJSON<ProductDetail>(`/api/products/${id}${qs({ lang })}`, signal, lang);
   },
   stores(signal?: AbortSignal) {
     return getJSON<Store[]>(`/api/stores`, signal);
@@ -49,7 +51,7 @@ export const api = {
   async chat(message: string, lang: Lang, history: { role: string; content: string }[]) {
     const res = await fetch(`${API}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Accept-Language": lang },
       body: JSON.stringify({ message, lang, history }),
     });
     if (!res.ok) throw new Error(`chat ${res.status}`);

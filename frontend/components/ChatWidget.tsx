@@ -54,7 +54,7 @@ export function ChatWidget() {
       </button>
 
       {open && (
-        <div className="fixed bottom-24 right-5 z-40 w-[min(92vw,380px)] h-[min(70vh,560px)] bg-paper border border-ink flex flex-col animate-fade-up">
+        <div className="fixed bottom-24 right-5 z-40 w-[min(92vw,380px)] h-[min(70vh,560px)] bg-paper border border-ink flex flex-col animate-scale-in">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
             <div>

@@ -31,6 +31,9 @@ async def list_products(
         min_price=min_price, max_price=max_price, sort=sort,
         page=page, page_size=page_size,
     )
+    for row in rows:
+        if row.get("category"):
+            row["category_label"] = t(row["category"].lower(), lang)
     return {"items": rows, "total": total, "page": page, "page_size": page_size}
 
 
@@ -45,4 +48,6 @@ async def product_detail(
         raise HTTPException(status_code=404, detail="Product not found")
     for o in detail["offers"]:
         o["in_stock_label"] = t("in_stock" if o["in_stock"] else "out_of_stock", lang)
+    if detail.get("category"):
+        detail["category_label"] = t(detail["category"].lower(), lang)
     return detail

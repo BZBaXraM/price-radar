@@ -82,8 +82,8 @@ export function Catalog() {
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-          {items.map((p) => (
-            <div key={p.id} className="animate-fade-up">
+          {items.map((p, i) => (
+            <div key={p.id} className="animate-fade-up" style={{ animationDelay: `${i * 60}ms` }}>
               <ProductCard p={p} />
             </div>
           ))}
