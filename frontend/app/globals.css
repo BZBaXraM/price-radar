@@ -38,6 +38,7 @@
 }
 
 html {
+  color-scheme: light;
   scroll-behavior: smooth;
 }
 html.dark {
@@ -117,6 +118,18 @@ body {
 /* Page-level entrance */
 .animate-page-enter {
   animation: fade-up 0.35s ease-out 0.05s both;
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Thin scrollbar for chat */

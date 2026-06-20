@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { tr } from "@/lib/i18n";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -13,11 +13,17 @@ export function Header() {
   const toggleChat = useAppStore((s) => s.toggleChat);
   const router = useRouter();
   const params = useSearchParams();
-  const [q, setQ] = useState("");
+  const urlQ = params.get("q") ?? "";
 
-  useEffect(() => {
-    setQ(params.get("q") ?? "");
-  }, [params]);
+  const [q, setQ] = useState(urlQ);
+  const [prevUrlQ, setPrevUrlQ] = useState(urlQ);
+
+  // "Storing information from previous renders" — sync input value when URL changes
+  // (e.g. browser back/forward) without a side-effect.
+  if (prevUrlQ !== urlQ) {
+    setPrevUrlQ(urlQ);
+    setQ(urlQ);
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();

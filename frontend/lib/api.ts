@@ -30,10 +30,18 @@ function qs(params: Record<string, unknown> | ProductQuery): string {
   return s ? `?${s}` : "";
 }
 
+const FETCH_TIMEOUT_MS = 10_000;
+
+function withTimeout(signal?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(FETCH_TIMEOUT_MS);
+  if (!signal) return timeout;
+  return AbortSignal.any([signal, timeout]);
+}
+
 async function getJSON<T>(path: string, signal?: AbortSignal, lang?: Lang): Promise<T> {
   const headers: Record<string, string> = {};
   if (lang) headers["Accept-Language"] = lang;
-  const res = await fetch(`${API}${path}`, { signal, headers });
+  const res = await fetch(`${API}${path}`, { signal: withTimeout(signal), headers });
   if (!res.ok) throw new Error(`API ${res.status}: ${path}`);
   return res.json() as Promise<T>;
 }
@@ -53,6 +61,7 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept-Language": lang },
       body: JSON.stringify({ message, lang, history }),
+      signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) throw new Error(`chat ${res.status}`);
     return res.json() as Promise<{ reply: string; lang: Lang }>;

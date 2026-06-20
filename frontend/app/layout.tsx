@@ -19,10 +19,32 @@ const inter = Inter({
   weight: ["300", "400", "500", "700"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://priceradar.az";
+
 export const metadata: Metadata = {
-  title: "PriceRadar — Compare prices across Azerbaijan's stores",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "PriceRadar — Qiymətləri müqayisə et",
+    template: "%s | PriceRadar",
+  },
   description:
-    "Compare product prices from KontaktHome, İrşad, World Telecom and Baku Electronics. Best deals, in real time, with an AI assistant.",
+    "KontaktHome, İrşad, World Telecom və Baku Electronics mağazalarının qiymətlərini real vaxtda müqayisə et. Ən yaxşı təkliflər, AI köməkçi ilə.",
+  openGraph: {
+    type: "website",
+    locale: "az_AZ",
+    alternateLocale: ["ru_RU", "en_US"],
+    url: siteUrl,
+    siteName: "PriceRadar",
+    title: "PriceRadar — Qiymətləri müqayisə et",
+    description:
+      "KontaktHome, İrşad, World Telecom və Baku Electronics mağazalarının qiymətlərini real vaxtda müqayisə et.",
+  },
+  twitter: {
+    card: "summary",
+    title: "PriceRadar",
+    description: "Azərbaycanda qiymət müqayisəsi — KontaktHome, İrşad, World Telecom, Baku Electronics.",
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({

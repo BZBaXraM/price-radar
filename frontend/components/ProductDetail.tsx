@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import Link from "next/link";
 import type { ProductDetail } from "@/lib/types";
 import { api } from "@/lib/api";
@@ -8,29 +8,43 @@ import { formatPrice, STORE_NAMES, storeColor } from "@/lib/format";
 import { tr } from "@/lib/i18n";
 import { useAppStore } from "@/store/useAppStore";
 import { ProductImage } from "./ProductImage";
-import { StoreBadge } from "./StoreBadge";
+
+type ViewState =
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "ok"; data: ProductDetail };
+
+type ViewAction =
+  | { type: "start" }
+  | { type: "success"; data: ProductDetail }
+  | { type: "error" };
+
+function reducer(_: ViewState, action: ViewAction): ViewState {
+  switch (action.type) {
+    case "start":  return { status: "loading" };
+    case "success": return { status: "ok", data: action.data };
+    case "error":  return { status: "error" };
+  }
+}
 
 export function ProductDetailView({ id }: { id: number }) {
   const lang = useAppStore((s) => s.lang);
-  const [data, setData] = useState<ProductDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [state, dispatch] = useReducer(reducer, { status: "loading" });
 
   useEffect(() => {
     const ctrl = new AbortController();
-    setLoading(true);
-    setNotFound(false);
+    let alive = true;
+    dispatch({ type: "start" });
+
     api
       .product(id, lang, ctrl.signal)
-      .then(setData)
-      .catch((e) => {
-        if (e.name !== "AbortError") setNotFound(true);
-      })
-      .finally(() => setLoading(false));
-    return () => ctrl.abort();
+      .then((data) => { if (alive) dispatch({ type: "success", data }); })
+      .catch((e) => { if (alive && e.name !== "AbortError") dispatch({ type: "error" }); });
+
+    return () => { alive = false; ctrl.abort(); };
   }, [id, lang]);
 
-  if (loading) {
+  if (state.status === "loading") {
     return (
       <div className="max-w-6xl mx-auto px-5 py-16">
         <div className="animate-pulse grid lg:grid-cols-2 gap-12">
@@ -45,7 +59,7 @@ export function ProductDetailView({ id }: { id: number }) {
     );
   }
 
-  if (notFound || !data) {
+  if (state.status === "error") {
     return (
       <div className="max-w-6xl mx-auto px-5 py-32 text-center">
         <p className="font-display text-3xl text-muted">{tr(lang, "no_results")}</p>
@@ -56,6 +70,7 @@ export function ProductDetailView({ id }: { id: number }) {
     );
   }
 
+  const { data } = state;
   const offers = [...data.offers].sort((a, b) => a.price - b.price);
   const cheapest = offers[0]?.price;
   const dearest = offers[offers.length - 1]?.price;
