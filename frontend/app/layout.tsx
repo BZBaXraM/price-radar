@@ -55,7 +55,7 @@ export default function RootLayout({
   const noFlashLang = `(function(){try{var s=JSON.parse(localStorage.getItem('priceradar'));if(s&&s.state&&s.state.lang)document.documentElement.lang=s.state.lang;}catch(e){}})();`;
 
   return (
-    <html lang="az" className={`${fraunces.variable} ${inter.variable} h-full`} suppressHydrationWarning>
+    <html lang="az" className={`${fraunces.variable} ${inter.variable} h-full`} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlashTheme }} />
         <script dangerouslySetInnerHTML={{ __html: noFlashLang }} />
