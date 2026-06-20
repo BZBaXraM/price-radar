@@ -9,7 +9,7 @@ export function Hero() {
 
   return (
     <section className="border-b border-line">
-      <div className="max-w-6xl mx-auto px-5 py-16 sm:py-24 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
+      <div className="max-w-6xl mx-auto px-5 py-10 sm:py-24 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
         <div className="lg:col-span-8">
           <p className="text-accent text-sm font-medium tracking-wide uppercase mb-4">
             {tr(lang, "tagline")}
@@ -21,7 +21,7 @@ export function Hero() {
             {tr(lang, "hero_sub")}
           </p>
         </div>
-        <div className="lg:col-span-4 flex flex-col gap-2 lg:items-end">
+        <div className="hidden sm:flex flex-col gap-2 lg:col-span-4 lg:items-end">
           {Object.entries(STORE_NAMES).map(([slug, name]) => (
             <div key={slug} className="flex items-center gap-2 text-sm">
               <span

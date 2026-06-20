@@ -87,7 +87,7 @@ export function ProductDetailView({ id }: { id: number }) {
             <p className="text-xs uppercase tracking-wide text-muted">
               {tr(lang, "best_price")}
             </p>
-            <div className="flex items-end justify-between gap-4 mt-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4 mt-1">
               <span className="font-display text-4xl">
                 {formatPrice(cheapest, data.currency)}
               </span>
@@ -96,7 +96,7 @@ export function ProductDetailView({ id }: { id: number }) {
                   href={offers[0]?.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-ink text-paper text-sm font-medium px-4 py-2.5 hover:bg-accent transition-colors"
+                  className="self-start sm:self-auto bg-ink text-paper text-sm font-medium px-4 py-2.5 hover:bg-accent transition-colors"
                 >
                   {tr(lang, "go_to_store")} →
                 </a>
@@ -115,13 +115,13 @@ export function ProductDetailView({ id }: { id: number }) {
             {offers.map((o, i) => (
               <div
                 key={o.id}
-                className={`flex items-center justify-between gap-4 px-4 py-3 ${
+                className={`flex items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-4 ${
                   i === 0 ? "bg-paper-2" : ""
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span
-                    className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+                    className="inline-block w-2 h-2 rounded-full shrink-0"
                     style={{ backgroundColor: storeColor(o.store_slug) }}
                   />
                   <div className="min-w-0">
@@ -137,9 +137,9 @@ export function ProductDetailView({ id }: { id: number }) {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                   <span
-                    className={`font-display text-lg ${i === 0 ? "text-ink" : "text-muted"}`}
+                    className={`font-display text-base sm:text-lg ${i === 0 ? "text-ink" : "text-muted"}`}
                   >
                     {formatPrice(o.price, o.currency)}
                   </span>
@@ -147,7 +147,7 @@ export function ProductDetailView({ id }: { id: number }) {
                     href={o.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs border border-line px-2.5 py-1.5 hover:border-ink transition-colors whitespace-nowrap"
+                    className="text-xs border border-line px-2 py-1.5 sm:px-2.5 hover:border-ink transition-colors whitespace-nowrap"
                   >
                     {tr(lang, "go_to_store")}
                   </a>

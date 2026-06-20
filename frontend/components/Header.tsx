@@ -44,10 +44,10 @@ export function Header() {
           />
         </form>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             onClick={toggleChat}
-            className="text-sm font-medium border-2 border-ink px-3 py-1.5 hover:-translate-y-px transition-transform"
+            className="hidden sm:block text-sm font-medium border-2 border-ink px-3 py-1.5 hover:-translate-y-px transition-transform"
           >
             {tr(lang, "ai_title")}
           </button>
