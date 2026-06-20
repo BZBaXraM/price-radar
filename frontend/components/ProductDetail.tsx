@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import Link from "next/link";
 import type { ProductDetail } from "@/lib/types";
 import { api } from "@/lib/api";
@@ -30,6 +30,22 @@ function reducer(_: ViewState, action: ViewAction): ViewState {
 export function ProductDetailView({ id }: { id: number }) {
   const lang = useAppStore((s) => s.lang);
   const [state, dispatch] = useReducer(reducer, { status: "loading" });
+  const [refreshing, setRefreshing] = useState(false);
+  const [flash, setFlash] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const data = await api.refreshProduct(id, lang);
+      dispatch({ type: "success", data });
+      setFlash(true);
+      setTimeout(() => setFlash(false), 2500);
+    } catch {
+      /* keep current data on failure */
+    } finally {
+      setRefreshing(false);
+    }
+  }, [id, lang]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -125,7 +141,28 @@ export function ProductDetailView({ id }: { id: number }) {
           </div>
 
           {/* Offers comparison */}
-          <h2 className="font-display text-2xl mt-10 mb-3">{tr(lang, "compare_prices")}</h2>
+          <div className="flex items-end justify-between gap-3 mt-10 mb-3">
+            <h2 className="font-display text-2xl">{tr(lang, "compare_prices")}</h2>
+            <div className="flex items-center gap-2 shrink-0">
+              {flash && (
+                <span className="text-xs" style={{ color: "var(--color-deal)" }}>
+                  ✓ {tr(lang, "updated_now")}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={refreshing}
+                aria-busy={refreshing}
+                className="inline-flex items-center gap-1.5 text-xs border border-line px-2.5 py-1.5 hover:border-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                <span className={`inline-block ${refreshing ? "animate-spin" : ""}`} aria-hidden>
+                  ↻
+                </span>
+                {refreshing ? tr(lang, "refreshing") : tr(lang, "refresh_price")}
+              </button>
+            </div>
+          </div>
           <div className="border border-line divide-y divide-line">
             {offers.map((o, i) => (
               <div

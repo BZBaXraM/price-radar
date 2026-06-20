@@ -12,6 +12,14 @@ from app.services import products as svc
 router = APIRouter(prefix="/api/products", tags=["products"])
 
 
+def _localize_detail(detail: dict, lang: str) -> dict:
+    for o in detail["offers"]:
+        o["in_stock_label"] = t("in_stock" if o["in_stock"] else "out_of_stock", lang)
+    if detail.get("category"):
+        detail["category_label"] = t(detail["category"].lower(), lang)
+    return detail
+
+
 @router.get("", response_model=ProductListResponse)
 async def list_products(
     q: str | None = None,
@@ -46,8 +54,26 @@ async def product_detail(
     detail = await svc.get_product_detail(db, product_id)
     if not detail:
         raise HTTPException(status_code=404, detail="Product not found")
-    for o in detail["offers"]:
-        o["in_stock_label"] = t("in_stock" if o["in_stock"] else "out_of_stock", lang)
-    if detail.get("category"):
-        detail["category_label"] = t(detail["category"].lower(), lang)
-    return detail
+    return _localize_detail(detail, lang)
+
+
+@router.post("/{product_id}/refresh", response_model=ProductDetail)
+async def refresh_product(
+    product_id: int,
+    include_slow: bool = Query(False, description="Also refresh browser-backed stores (kontakt; slow)"),
+    lang: str = Depends(get_lang),
+    db: AsyncSession = Depends(get_db),
+):
+    """On-demand re-scrape of just this product's offers; returns fresh detail.
+
+    Changed prices are also broadcast over ``/ws/prices`` like scheduled runs.
+    """
+    from app.services.refresh import refresh_product as do_refresh
+
+    result = await do_refresh(db, product_id, include_slow=include_slow)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+    detail = await svc.get_product_detail(db, product_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return _localize_detail(detail, lang)

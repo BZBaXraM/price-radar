@@ -22,6 +22,15 @@ class ScrapedItem:
     extra: dict = field(default_factory=dict)
 
 
+@dataclass(slots=True)
+class OfferSnapshot:
+    """Fresh price/stock for a single known offer page (on-demand refresh)."""
+
+    price: float
+    in_stock: bool = True
+    image_url: str | None = None
+
+
 _PRICE_RE = re.compile(r"[\d][\d\s.,]*")
 
 
@@ -58,3 +67,11 @@ class BaseScraper(ABC):
     async def run(self, limit: int = 60) -> list[ScrapedItem]:
         """Scrape up to ``limit`` products and return normalized items."""
         raise NotImplementedError
+
+    async def fetch_offer(self, url: str) -> "OfferSnapshot | None":
+        """Re-fetch a single known product page for an on-demand refresh.
+
+        Returns fresh price/stock, or ``None`` when the page can't be read
+        (so the caller keeps the last known values). Opt-in per store.
+        """
+        return None

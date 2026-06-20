@@ -11,7 +11,7 @@ import re
 
 from selectolax.parser import HTMLParser
 
-from app.scrapers.base import BaseScraper, ScrapedItem, parse_price
+from app.scrapers.base import BaseScraper, OfferSnapshot, ScrapedItem, parse_price
 from app.scrapers.http_client import fetch_text, make_client
 from app.scrapers.registry import CATEGORIES, STORE_DEFS
 
@@ -67,6 +67,32 @@ class IrshadScraper(BaseScraper):
                 )
             )
         return out
+
+    @staticmethod
+    def parse_detail(html: str) -> OfferSnapshot | None:
+        tree = HTMLParser(html)
+        # Main product price lives in the prod-info block; scope to it so we
+        # never pick up a recommended-product card's price.
+        price = None
+        for sel in (".prod-info__bottom__price", ".new-price", ".product-view__price"):
+            el = tree.css_first(sel)
+            if el:
+                price = parse_price(el.text())
+                if price:
+                    break
+        if not price:
+            return None
+        # No reliable in-stock marker on the detail page; mirror the listing
+        # scraper, which treats İrşad products as in stock.
+        return OfferSnapshot(price=price, in_stock=True)
+
+    async def fetch_offer(self, url: str) -> OfferSnapshot | None:
+        async with make_client() as client:
+            try:
+                html = await fetch_text(client, url)
+            except Exception:
+                return None
+        return self.parse_detail(html)
 
     async def _resolve_endpoint(self, client, path: str) -> str | None:
         try:

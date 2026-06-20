@@ -53,6 +53,16 @@ export const api = {
   product(id: number, lang: Lang, signal?: AbortSignal) {
     return getJSON<ProductDetail>(`/api/products/${id}${qs({ lang })}`, signal, lang);
   },
+  async refreshProduct(id: number, lang: Lang, signal?: AbortSignal) {
+    // On-demand re-scrape of just this product's offers (fast stores only).
+    const res = await fetch(`${API}/api/products/${id}/refresh`, {
+      method: "POST",
+      headers: { "Accept-Language": lang },
+      signal: withTimeout(signal),
+    });
+    if (!res.ok) throw new Error(`refresh ${res.status}`);
+    return res.json() as Promise<ProductDetail>;
+  },
   stores(signal?: AbortSignal) {
     return getJSON<Store[]>(`/api/stores`, signal);
   },

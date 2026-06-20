@@ -35,3 +35,31 @@ def test_kontakt_parse():
     _assert_items(items, "kontakt")
     # kontakt data-gtm carries brand info
     assert any(it.brand for it in items)
+
+
+# --- single-product detail parsers (on-demand refresh) ---
+
+def test_baku_parse_detail():
+    snap = BakuElectronicsScraper.parse_detail(load_fixture("baku_detail.html"))
+    assert snap is not None
+    assert snap.price > 0
+    assert snap.in_stock is True
+
+
+def test_wt_parse_detail():
+    snap = WorldTelecomScraper.parse_detail(load_fixture("wt_detail.html"))
+    assert snap is not None
+    assert snap.price > 0
+    assert snap.in_stock is True
+
+
+def test_irshad_parse_detail():
+    snap = IrshadScraper.parse_detail(load_fixture("irshad_detail.html"))
+    assert snap is not None
+    assert snap.price > 0
+
+
+def test_parse_detail_handles_garbage():
+    assert WorldTelecomScraper.parse_detail("<html></html>") is None
+    assert BakuElectronicsScraper.parse_detail("<html></html>") is None
+    assert IrshadScraper.parse_detail("<html></html>") is None

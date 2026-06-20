@@ -5,7 +5,7 @@ import json
 import re
 
 from app.config import settings
-from app.scrapers.base import BaseScraper, ScrapedItem
+from app.scrapers.base import BaseScraper, OfferSnapshot, ScrapedItem
 from app.scrapers.http_client import fetch_text, make_client
 from app.scrapers.registry import CATEGORIES, STORE_DEFS
 
@@ -55,6 +55,31 @@ class BakuElectronicsScraper(BaseScraper):
                 )
             )
         return out
+
+    @staticmethod
+    def parse_detail(html: str) -> OfferSnapshot | None:
+        m = _NEXT_DATA_RE.search(html)
+        if not m:
+            return None
+        try:
+            pd = json.loads(m.group(1))["props"]["pageProps"]["prodDetails"]
+        except (KeyError, TypeError, json.JSONDecodeError):
+            return None
+        price = pd.get("discounted_price") or pd.get("price")
+        if not price:
+            return None
+        in_stock = bool(pd.get("quantity")) or bool(pd.get("is_online")) or bool(pd.get("status"))
+        images = pd.get("images")
+        image_url = images[0] if isinstance(images, list) and images else pd.get("image")
+        return OfferSnapshot(price=float(price), in_stock=in_stock, image_url=image_url)
+
+    async def fetch_offer(self, url: str) -> OfferSnapshot | None:
+        async with make_client() as client:
+            try:
+                html = await fetch_text(client, url)
+            except Exception:
+                return None
+        return self.parse_detail(html)
 
     async def run(self, limit: int = 60) -> list[ScrapedItem]:
         results: list[ScrapedItem] = []

@@ -8,11 +8,15 @@ Cloudflare challenge fails — other stores keep working.
 from __future__ import annotations
 
 import json
+import re
 
 from selectolax.parser import HTMLParser
 
-from app.scrapers.base import BaseScraper, ScrapedItem
+from app.scrapers.base import BaseScraper, OfferSnapshot, ScrapedItem
+from app.scrapers.base import parse_price
 from app.scrapers.registry import CATEGORIES, STORE_DEFS
+
+_JSONLD_PRICE_RE = re.compile(r'"price"\s*:\s*"?([\d.,]+)"?')
 
 
 class KontaktScraper(BaseScraper):
@@ -70,6 +74,36 @@ class KontaktScraper(BaseScraper):
                 )
             )
         return out
+
+    @staticmethod
+    def parse_detail(html: str) -> OfferSnapshot | None:
+        tree = HTMLParser(html)
+        # Prefer Open Graph / JSON-LD price exposed on the product page.
+        meta = tree.css_first('meta[property="product:price:amount"]') or tree.css_first(
+            'meta[property="og:price:amount"]'
+        )
+        price = parse_price(meta.attributes.get("content")) if meta else None
+        if not price:
+            m = _JSONLD_PRICE_RE.search(html)
+            price = parse_price(m.group(1)) if m else None
+        if not price:
+            return None
+        avail = tree.css_first('meta[property="product:availability"]')
+        in_stock = True
+        if avail:
+            in_stock = "out" not in (avail.attributes.get("content") or "").lower()
+        return OfferSnapshot(price=price, in_stock=in_stock)
+
+    async def fetch_offer(self, url: str) -> OfferSnapshot | None:
+        # Best-effort: kontakt is behind Cloudflare and needs a browser render,
+        # so this is slow; the refresh service skips it unless explicitly asked.
+        from app.scrapers.browser import get_rendered_html
+
+        try:
+            html = await get_rendered_html(url, timeout_ms=40000)
+        except Exception:
+            return None
+        return self.parse_detail(html)
 
     async def run(self, limit: int = 60) -> list[ScrapedItem]:
         from app.scrapers.browser import get_rendered_html

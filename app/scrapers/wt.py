@@ -6,7 +6,7 @@ import re
 from selectolax.parser import HTMLParser
 
 from app.config import settings
-from app.scrapers.base import BaseScraper, ScrapedItem, parse_price
+from app.scrapers.base import BaseScraper, OfferSnapshot, ScrapedItem, parse_price
 from app.scrapers.http_client import fetch_text, make_client
 from app.scrapers.registry import CATEGORIES, STORE_DEFS
 
@@ -53,6 +53,27 @@ class WorldTelecomScraper(BaseScraper):
                 )
             )
         return out
+
+    @staticmethod
+    def parse_detail(html: str) -> OfferSnapshot | None:
+        tree = HTMLParser(html)
+        price_el = tree.css_first(".price")
+        price = parse_price(price_el.text()) if price_el else None
+        if not price:
+            return None
+        # "Add to cart" (Səbətə at) is only rendered for in-stock products.
+        in_stock = tree.css_first(".addToCart") is not None
+        img = tree.css_first(".productImage-img") or tree.css_first("img")
+        image_url = img.attributes.get("src") if img else None
+        return OfferSnapshot(price=price, in_stock=in_stock, image_url=image_url)
+
+    async def fetch_offer(self, url: str) -> OfferSnapshot | None:
+        async with make_client() as client:
+            try:
+                html = await fetch_text(client, url)
+            except Exception:
+                return None
+        return self.parse_detail(html)
 
     async def run(self, limit: int = 60) -> list[ScrapedItem]:
         results: list[ScrapedItem] = []
