@@ -32,11 +32,15 @@ function qs(params: Record<string, unknown> | ProductQuery): string {
 
 const FETCH_TIMEOUT_MS = 10_000;
 
-function withTimeout(signal?: AbortSignal): AbortSignal {
-  const timeout = AbortSignal.timeout(FETCH_TIMEOUT_MS);
+function withTimeout(signal?: AbortSignal, ms: number = FETCH_TIMEOUT_MS): AbortSignal {
+  const timeout = AbortSignal.timeout(ms);
   if (!signal) return timeout;
   return AbortSignal.any([signal, timeout]);
 }
+
+// A live refresh re-scrapes the actual store pages, including the slow
+// browser-backed store (kontakt), which can take tens of seconds.
+const REFRESH_TIMEOUT_MS = 50_000;
 
 async function getJSON<T>(path: string, signal?: AbortSignal, lang?: Lang): Promise<T> {
   const headers: Record<string, string> = {};
@@ -54,11 +58,12 @@ export const api = {
     return getJSON<ProductDetail>(`/api/products/${id}${qs({ lang })}`, signal, lang);
   },
   async refreshProduct(id: number, lang: Lang, signal?: AbortSignal) {
-    // On-demand re-scrape of just this product's offers (fast stores only).
-    const res = await fetch(`${API}/api/products/${id}/refresh`, {
+    // On-demand live re-scrape of just this product's offers, including the
+    // slow browser-backed store (kontakt) so every price matches the real site.
+    const res = await fetch(`${API}/api/products/${id}/refresh?include_slow=true`, {
       method: "POST",
       headers: { "Accept-Language": lang },
-      signal: withTimeout(signal),
+      signal: withTimeout(signal, REFRESH_TIMEOUT_MS),
     });
     if (!res.ok) throw new Error(`refresh ${res.status}`);
     return res.json() as Promise<ProductDetail>;

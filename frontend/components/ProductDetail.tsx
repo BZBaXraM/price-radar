@@ -1,66 +1,122 @@
 "use client";
 
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer } from "react";
 import Link from "next/link";
-import type { ProductDetail } from "@/lib/types";
-import { api } from "@/lib/api";
+import type { ProductDetail, PriceUpdate } from "@/lib/types";
+import { api, WS_BASE } from "@/lib/api";
 import { formatPrice, STORE_NAMES, storeColor } from "@/lib/format";
 import { tr } from "@/lib/i18n";
 import { useAppStore } from "@/store/useAppStore";
 import { ProductImage } from "./ProductImage";
 
-type ViewState =
+type View =
   | { status: "loading" }
   | { status: "error" }
   | { status: "ok"; data: ProductDetail };
 
+// `syncing` = a live re-scrape is in flight; `flash` = brief "just updated" badge.
+type State = { view: View; syncing: boolean; flash: boolean };
+
 type ViewAction =
   | { type: "start" }
-  | { type: "success"; data: ProductDetail }
-  | { type: "error" };
+  | { type: "snapshot"; data: ProductDetail } // fast DB read; never clobbers live data
+  | { type: "live"; data: ProductDetail }     // authoritative re-scrape result
+  | { type: "live_failed" }
+  | { type: "error" }
+  | { type: "flash_off" }
+  | { type: "patch"; change: PriceUpdate };
 
-function reducer(_: ViewState, action: ViewAction): ViewState {
+function reducer(state: State, action: ViewAction): State {
   switch (action.type) {
-    case "start":  return { status: "loading" };
-    case "success": return { status: "ok", data: action.data };
-    case "error":  return { status: "error" };
+    case "start":      return { view: { status: "loading" }, syncing: true, flash: false };
+    case "snapshot":   return { ...state, view: { status: "ok", data: action.data } };
+    case "live":       return { view: { status: "ok", data: action.data }, syncing: false, flash: true };
+    case "live_failed": return { ...state, syncing: false };
+    // A failed load must not clobber prices we're already showing.
+    case "error":      return state.view.status === "ok" ? state : { ...state, view: { status: "error" }, syncing: false };
+    case "flash_off":  return { ...state, flash: false };
+    case "patch": {
+      // Live WebSocket patch: update the matching store's offer in place.
+      if (state.view.status !== "ok") return state;
+      const offers = state.view.data.offers.map((o) =>
+        o.store_slug === action.change.store_slug
+          ? { ...o, price: action.change.new_price, in_stock: action.change.in_stock }
+          : o,
+      );
+      return { ...state, view: { status: "ok", data: { ...state.view.data, offers } } };
+    }
   }
 }
 
 export function ProductDetailView({ id }: { id: number }) {
   const lang = useAppStore((s) => s.lang);
-  const [state, dispatch] = useReducer(reducer, { status: "loading" });
-  const [refreshing, setRefreshing] = useState(false);
-  const [flash, setFlash] = useState(false);
+  const [{ view, syncing, flash }, dispatch] = useReducer(reducer, {
+    view: { status: "loading" },
+    syncing: false,
+    flash: false,
+  });
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      const data = await api.refreshProduct(id, lang);
-      dispatch({ type: "success", data });
-      setFlash(true);
-      setTimeout(() => setFlash(false), 2500);
-    } catch {
-      /* keep current data on failure */
-    } finally {
-      setRefreshing(false);
-    }
-  }, [id, lang]);
-
+  // Load the product, then keep its prices live: an immediate re-scrape of the
+  // stores (incl. the slow browser-backed one) on open, plus WebSocket patches
+  // for background changes while the page stays open. No manual refresh button.
   useEffect(() => {
     const ctrl = new AbortController();
     let alive = true;
+    let liveLoaded = false; // the live re-scrape is authoritative over the DB snapshot
     dispatch({ type: "start" });
 
+    // 1) Fast: show the last-known (DB) snapshot right away.
     api
       .product(id, lang, ctrl.signal)
-      .then((data) => { if (alive) dispatch({ type: "success", data }); })
+      .then((data) => { if (alive && !liveLoaded) dispatch({ type: "snapshot", data }); })
       .catch((e) => { if (alive && e.name !== "AbortError") dispatch({ type: "error" }); });
+
+    // 2) Live: re-scrape the actual store pages and replace with real prices.
+    api
+      .refreshProduct(id, lang, ctrl.signal)
+      .then((data) => {
+        if (!alive) return;
+        liveLoaded = true;
+        dispatch({ type: "live", data });
+        setTimeout(() => { if (alive) dispatch({ type: "flash_off" }); }, 2500);
+      })
+      .catch(() => { if (alive) dispatch({ type: "live_failed" }); });
 
     return () => { alive = false; ctrl.abort(); };
   }, [id, lang]);
 
-  if (state.status === "loading") {
+  // Live price stream: patch this product's offers as background scrapes land.
+  useEffect(() => {
+    let closed = false;
+    let retry: ReturnType<typeof setTimeout>;
+    let ws: WebSocket | null = null;
+
+    function connect() {
+      if (closed) return;
+      try {
+        ws = new WebSocket(`${WS_BASE}/ws/prices`);
+      } catch {
+        retry = setTimeout(connect, 5000);
+        return;
+      }
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.type !== "price_updates" || !Array.isArray(msg.changes)) return;
+          for (const change of msg.changes as PriceUpdate[]) {
+            if (change.product_id === id) dispatch({ type: "patch", change });
+          }
+        } catch { /* ignore malformed */ }
+      };
+      ws.onclose = () => { if (!closed) retry = setTimeout(connect, 5000); };
+      ws.onerror = () => ws?.close();
+    }
+
+    connect();
+    return () => { closed = true; clearTimeout(retry); ws?.close(); };
+  }, [id]);
+
+  if (view.status === "loading") {
     return (
       <div className="max-w-6xl mx-auto px-5 py-16">
         <div className="animate-pulse grid lg:grid-cols-2 gap-12">
@@ -75,7 +131,7 @@ export function ProductDetailView({ id }: { id: number }) {
     );
   }
 
-  if (state.status === "error") {
+  if (view.status === "error") {
     return (
       <div className="max-w-6xl mx-auto px-5 py-32 text-center">
         <p className="font-display text-3xl text-muted">{tr(lang, "no_results")}</p>
@@ -86,7 +142,7 @@ export function ProductDetailView({ id }: { id: number }) {
     );
   }
 
-  const { data } = state;
+  const { data } = view;
   const offers = [...data.offers].sort((a, b) => a.price - b.price);
   const cheapest = offers[0]?.price;
   const dearest = offers[offers.length - 1]?.price;
@@ -143,24 +199,27 @@ export function ProductDetailView({ id }: { id: number }) {
           {/* Offers comparison */}
           <div className="flex items-end justify-between gap-3 mt-10 mb-3">
             <h2 className="font-display text-2xl">{tr(lang, "compare_prices")}</h2>
-            <div className="flex items-center gap-2 shrink-0">
-              {flash && (
-                <span className="text-xs" style={{ color: "var(--color-deal)" }}>
-                  ✓ {tr(lang, "updated_now")}
-                </span>
+            <div
+              className="flex items-center gap-1.5 text-xs shrink-0 whitespace-nowrap"
+              aria-live="polite"
+            >
+              {syncing ? (
+                <>
+                  <span className="inline-block animate-spin" aria-hidden>↻</span>
+                  <span className="text-muted">{tr(lang, "refreshing")}</span>
+                </>
+              ) : flash ? (
+                <span style={{ color: "var(--color-deal)" }}>✓ {tr(lang, "updated_now")}</span>
+              ) : (
+                <>
+                  <span
+                    className="inline-block w-2 h-2 rounded-full animate-pulse"
+                    style={{ backgroundColor: "var(--color-deal)" }}
+                    aria-hidden
+                  />
+                  <span className="text-muted">{tr(lang, "live_prices")}</span>
+                </>
               )}
-              <button
-                type="button"
-                onClick={onRefresh}
-                disabled={refreshing}
-                aria-busy={refreshing}
-                className="inline-flex items-center gap-1.5 text-xs border border-line px-2.5 py-1.5 hover:border-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                <span className={`inline-block ${refreshing ? "animate-spin" : ""}`} aria-hidden>
-                  ↻
-                </span>
-                {refreshing ? tr(lang, "refreshing") : tr(lang, "refresh_price")}
-              </button>
             </div>
           </div>
           <div className="border border-line divide-y divide-line">
